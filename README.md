@@ -1,2 +1,2 @@
-# CprE308Project
+# CprE489Project
 Token Ring Network
