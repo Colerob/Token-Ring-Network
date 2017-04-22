@@ -9,18 +9,21 @@ int main(int argc, char **argv)
     
 
     //Setup Packet Struct
-    struct packet
+    struct Packet
     {
-        unsigned short syn_syn;
-        unsigned short dle_stx;
-        unsigned char destination;
-        unsigned char source;
+        char syn_syn[2];
+        char dle_stx[2];
+        char destination;
+        char source;
         char text[80];
-        unsigned short dle_etx;
-    }
+        char dle_etx[2];
+    };
+    
+    struct Packet packet;
     
     char node_num;//This node number
     char *clientaddress = "";
+    char buffer[88];
     int clientport;
     int serverport;
     char yesno;
@@ -98,11 +101,29 @@ int main(int argc, char **argv)
 
 	  	if (FD_ISSET(STDIN_FILENO, &rset)) {
 	  	    /* read data from the standard input*/
-		    //TODO If stdin is ready, setup packets to send
                 //TODO Check if machine has token, and token is empty
-                //TODO Read stdin, designate destination machine and add to packet
-                //TODO Add source address to packet
+                //Read stdin, designate destination machine and add to packet
+                printf("Please enter destination: ");
+                fgets(packet.destination, sizeof(packet.destination), stdin);
+                
+                //Add source address to packet
+                packet.source = node_num;
                 //TODO Read stdin, add input text (up to 80 chars) and add to packet
+                
+                //Serialize packet for sending
+                buffer[0] = packet.syn_syn[0];
+                buffer[1] = packet.syn_syn[1];
+                buffer[2] = packet.dle_stx[0];
+                buffer[3] = packet.dle_stx[1];
+                buffer[4] = packet.destination;
+                buffer[5] = packet.source;
+                for(i = 0; i < 80; i++)
+                {
+                    buffer[i + 6] = packet.text[i];
+                }
+                buffer[86] = packet.token[0];
+                buffer[87] = packet.token[1];
+                //TODO Send packet
 			n--;
 	  	}
 	  	
@@ -113,7 +134,25 @@ int main(int argc, char **argv)
 	  	    /* socket is ready for reading */
 	  	    
 			/* read data from socket */
-			
+			if(rec = recv(sd, buffer, 88, 0) == -1) { 
+                printf("ERROR on recv\n");
+            }
+            
+            //TODO Store received message into packet struct
+            //Unserialize packet
+            packet.syn_syn[0] = buffer[0];
+            packet.syn_syn[1] = buffer[1];
+            packet.dle_stx[0] = buffer[2];
+            packet.dle_stx[1] = buffer[3];
+            packet.destination = buffer[4];
+            packet.source = buffer[5];
+            for(i = 0; i < 80; i++)
+            {
+                packet.text[0] = buffer[i + 6];
+            }
+            packet.token[0] = buffer[86];
+            packet.token[1] = buffer[87];
+             
 			//TODO If packet is for this machine, display it
                 //TODO Diplay message to terminal, preceded by sender's node address
                 //TODO Remove message up to, but not including, DLE-ETX
