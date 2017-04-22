@@ -4,6 +4,9 @@
 
 #include "header.h"
 
+int Server(char *my_ip_addr, char *other_ip_addr, int my_port);
+int Client(int port_no, char *other_ip_addr);
+
 int main(int argc, char **argv)
 {
     
@@ -23,9 +26,14 @@ int main(int argc, char **argv)
     
     char node_num;//This node number
     char *clientaddress = "";
+<<<<<<< HEAD
     char buffer[88];
     int clientport;
     int serverport;
+=======
+    char *clientport = "";
+    char *serverport = "";
+>>>>>>> e168100934cf14cb20c84223c31769fce0686008
     char yesno;
     
     
@@ -34,53 +42,33 @@ int main(int argc, char **argv)
     fgets(node_num, sizeof(node_num), stdin);
     printf("Node number set as %c", node_num);
     
-    //TODO Initialize Client and Server (Check stdin for node numbers)
+
+ 
+    
+      //TODO Initialize Client and Server (Check stdin for node numbers)
     printf("Please enter IP address to connect to: ");
     fgets(clientaddress, sizeof(clientaddress), stdin);
-
-    printf("Please enter port number to connect to: ");
-    scanf("%10d" ,&clientport);
     
-    printf("Please enter server port number: ");
-    scanf("%10d" ,&serverport);
     
-    printf("Is this the first machine to be setup? (y/n)");
-    fgets(yesno, sizeof(yesno), stdin);
+            
+    printf("Connecting to IP address %s ...", clientaddress);
+    //TODO Client connection
+    printf("Connected!(Client connection)");
     
-    if(yesno == 'y')
-    {
-        //Server
-        printf("Listening for connection from another machine...");
-        //TODO Server connection
-        printf("Connected! (Server Connection)");
-        
-        //Client
-        printf("Connecting to IP address %s ...", clientaddress);
-        //TODO Client connection
-        printf("Connected!(Client connection)");
-    }
-    
-    else
-    {
-        //Client
-        printf("Connecting to IP address %s ...", clientaddress);
-        //TODO Client connection
-        printf("Connected!(Client connection)");
-        
-        //Server
-        printf("Listening for connection from another machine...");
-        //TODO Server connection
-        printf("Connected! (Server Connection)");
-    }
     
 
+ 
     
-
+     printf("Listening for connection from another machine...");
+    //TODO Server connection
+    printf("Connected! (Server Connection)");
+    
+   
     
     //Select.c
     
     int n;
-	fd_set rset;		/* declare an fd_set for read descriptors */
+    fd_set rset;		/* declare an fd_set for read descriptors */
     
     for (;;) {	/* endless loop, if you want continuous operation */
         FD_ZERO(&rset);		/* clear all bits in rset */
@@ -101,6 +89,10 @@ int main(int argc, char **argv)
 
 	  	if (FD_ISSET(STDIN_FILENO, &rset)) {
 	  	    /* read data from the standard input*/
+<<<<<<< HEAD
+=======
+		//TODO If stdin is ready, setup packets to send
+>>>>>>> e168100934cf14cb20c84223c31769fce0686008
                 //TODO Check if machine has token, and token is empty
                 //Read stdin, designate destination machine and add to packet
                 printf("Please enter destination: ");
@@ -161,4 +153,58 @@ int main(int argc, char **argv)
             //TODO If packet is not for this machine, send it to next machine
 	    }
         
+                
+
 }
+
+int Server(char *my_ip_addr, char *other_ip_addr, int my_port)
+{
+	
+
+	int s, fd, otherlength;
+	FILE *fdopen(), *fp;
+	char ch;
+	struct sockaddr_in myaddr;
+	struct sockaddr_in otheraddr;
+	otheraddr.sin_addr.s_addr=inet_addr(other_ip_addr);
+
+
+	if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) ReportError ("socket");
+	myaddr.sin_addr.s_addr=inet_addr(my_ip_addr);
+	myaddr.sin_family  = AF_INET;
+	myaddr.sin_port = htons(my_port);
+	bind(s, &myaddr, sizeof(myaddr));
+
+	listen(s, 1);
+	
+	fd = accept(s, &otheraddr, sizeof(otherlength));
+
+	fprintf(stdout, "Connected");
+
+	return(fd);
+}
+
+int Client(int port_no, char *other_ip_addr)
+{
+	int s;
+	int n;
+	int code;
+	FILE *fp;
+	char ch;
+	struct sockaddr_in otheraddr;
+	
+	otheraddr.sin_addr.s_addr=inet_addr(other_ip_addr);
+	otheraddr.sin_family = AF_INET;
+	otheraddr.sin_port = htons(port_no);
+	
+	s = socket(AF_INET, SOCK_STREAM, 0);
+
+	n = connect(s, &otheraddr, sizeof(otheraddr));
+
+	if ( n < 0)
+		return(n);
+	else
+		return(s);
+}
+
+
