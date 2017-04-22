@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     char yesno;
     
     
-    //Setup Node Number
+  //Setup Node Number
     printf("Please enter this machine's node number: ");
     fgets(node_num, sizeof(node_num), stdin);
     printf("Node number set as %c", node_num);
@@ -48,20 +48,42 @@ int main(int argc, char **argv)
       //TODO Initialize Client and Server (Check stdin for node numbers)
     printf("Please enter IP address to connect to: ");
     fgets(clientaddress, sizeof(clientaddress), stdin);
-    
-    
-            
-    printf("Connecting to IP address %s ...", clientaddress);
-    //TODO Client connection
-    printf("Connected!(Client connection)");
-    
-    
 
- 
+    printf("Please enter port number to connect to: ");
+    scanf("%10d" ,&clientport);
     
-     printf("Listening for connection from another machine...");
-    //TODO Server connection
-    printf("Connected! (Server Connection)");
+    printf("Please enter server port number: ");
+    scanf("%10d" ,&serverport);
+    
+    printf("Is this the first machine to be setup? (y/n)");
+    fgets(yesno, sizeof(yesno), stdin);
+    
+    if(yesno == 'y')
+    {
+        //Server
+        printf("Listening for connection from another machine...");
+        //TODO Server connection
+        printf("Connected! (Server Connection)");
+        
+        //Client
+        printf("Connecting to IP address %s ...", clientaddress);
+        //TODO Client connection
+        printf("Connected!(Client connection)");
+    }
+    
+    else
+    {
+        //Client
+        printf("Connecting to IP address %s ...", clientaddress);
+        //TODO Client connection
+        printf("Connected!(Client connection)");
+        
+        //Server
+        printf("Listening for connection from another machine...");
+        //TODO Server connection
+        printf("Connected! (Server Connection)");
+    }
+    
     
    
     
