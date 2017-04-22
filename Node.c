@@ -26,14 +26,11 @@ int main(int argc, char **argv)
     
     char node_num;//This node number
     char *clientaddress = "";
-<<<<<<< HEAD
     char buffer[88];
     int clientport;
     int serverport;
-=======
     char *clientport = "";
     char *serverport = "";
->>>>>>> e168100934cf14cb20c84223c31769fce0686008
     char yesno;
     
     
@@ -111,10 +108,9 @@ int main(int argc, char **argv)
 
 	  	if (FD_ISSET(STDIN_FILENO, &rset)) {
 	  	    /* read data from the standard input*/
-<<<<<<< HEAD
-=======
+
 		//TODO If stdin is ready, setup packets to send
->>>>>>> e168100934cf14cb20c84223c31769fce0686008
+
                 //TODO Check if machine has token, and token is empty
                 //Read stdin, designate destination machine and add to packet
                 printf("Please enter destination: ");
