@@ -24,8 +24,13 @@ int main(int argc, char **argv)
     
     char node_num;//This node number
     char *clientaddress = "";
+<<<<<<< HEAD
     char *clientport = "";
     char *serverport = "";
+=======
+    int clientport;
+    int serverport;
+>>>>>>> a729b8155604a8e1e94e9b9a6497a812cc0360f3
     char yesno;
     
     
@@ -40,7 +45,30 @@ int main(int argc, char **argv)
       //TODO Initialize Client and Server (Check stdin for node numbers)
     printf("Please enter IP address to connect to: ");
     fgets(clientaddress, sizeof(clientaddress), stdin);
+
+    printf("Please enter port number to connect to: ");
+    scanf("%10d" ,&clientport);
     
+    printf("Please enter server port number: ");
+    scanf("%10d" ,&serverport);
+    
+    printf("Is this the first machine to be setup? (y/n)");
+    fgets(yesno, sizeof(yesno), stdin);
+    
+    if(yesno == 'y')
+    {
+        //Server
+        printf("Listening for connection from another machine...");
+        //TODO Server connection
+        printf("Connected! (Server Connection)");
+        
+        //Client
+        printf("Connecting to IP address %s ...", clientaddress);
+        //TODO Client connection
+        printf("Connected!(Client connection)");
+    }
+    
+<<<<<<< HEAD
     
             
     printf("Connecting to IP address %s ...", clientaddress);
@@ -54,6 +82,24 @@ int main(int argc, char **argv)
      printf("Listening for connection from another machine...");
     //TODO Server connection
     printf("Connected! (Server Connection)");
+=======
+    else
+    {
+        //Client
+        printf("Connecting to IP address %s ...", clientaddress);
+        //TODO Client connection
+        printf("Connected!(Client connection)");
+        
+        //Server
+        printf("Listening for connection from another machine...");
+        //TODO Server connection
+        printf("Connected! (Server Connection)");
+    }
+    
+
+    
+
+>>>>>>> a729b8155604a8e1e94e9b9a6497a812cc0360f3
     
    
     
@@ -105,6 +151,7 @@ int main(int argc, char **argv)
             //TODO If packet is not for this machine, send it to next machine
 	    }
         
+<<<<<<< HEAD
                 
 
 }
@@ -134,6 +181,8 @@ int Server(char *my_ip_addr, char *other_ip_addr, int my_port)
 	fprintf(stdout, "Connected");
 
 	return(fd);
+=======
+>>>>>>> a729b8155604a8e1e94e9b9a6497a812cc0360f3
 }
 
 int Client(int port_no, char *other_ip_addr)
