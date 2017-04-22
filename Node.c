@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     
     //Select.c
     
-    int n;
+    int n, i;
     fd_set rset;		/* declare an fd_set for read descriptors */
     
     for (;;) {	/* endless loop, if you want continuous operation */
@@ -105,56 +105,10 @@ int main(int argc, char **argv)
 		 	/* code to handle errors */
 	  	}
         //TODO Generate token if CNTRL-P (Hex 10) is typed on machine
-   
+        
         /* after this point, handle the ready descriptor(s) */
-	  
-	  	/* check for ready data from the keyboard */
-
-	  	if (FD_ISSET(STDIN_FILENO, &rset)) {
-	  	    /* read data from the standard input*/
-
-		//TODO If stdin is ready, setup packets to send
-
-                //TODO Check if machine has token
-                //TODO If machine has token and wants to send a message, read from stdin
-                //TODO If machine has token and doesn't want to send a message, pass the token along
-                //Read stdin, designate destination machine and add to packet
-                printf("Please enter destination: ");
-                fgets(packet.destination, sizeof(packet.destination), stdin);
-                
-                //Add source address to packet
-                packet.source = node_num;
-                //Read stdin, add input text (up to 80 chars) and add to packet
-                i = 0;
-                //TODO dont use getchar
-                while(i < 80)
-                {
-                    packet.text[i] = getchar();
-                    //If character pressed was return, stop taking in characters
-                    if(packet.text[i] = '\n')
-                    {
-                        packet.text[i] = ' ');
-                        break;
-                    }
-                    i++;
-                }
-                //After reading is complete, replace all remaining empty text bits as spaces
-                for(; i < 80; i++)
-                {
-                    packet.text[i] = ' ';
-                }
-                
- 
-                //Send packet, reset packet in storage
-                sendPacket();
-                emptyPacket();
-                packet.token[0] = ' ';
-                packet.token[1] = ' ';
-			n--;
-	  	}
-	  	
-
-            
+        
+        
         //TODO If server is ready, read packets
 	  	if ((n > 0 ) && (FD_ISSET(sd, &rset)) ) 
 	  	    /* socket is ready for reading */
@@ -178,18 +132,71 @@ int main(int argc, char **argv)
             }
             packet.token[0] = buffer[86];
             packet.token[1] = buffer[87];
+            
+            //TODO If packet is just token (ie, all fields except DEL-ETX are ' ') and there is input from keyboard
+            /* check for ready data from the keyboard */
+
+	  	    if (FD_ISSET(STDIN_FILENO, &rset)) {
+	  	    /* read data from the standard input*/
+
+		    //TODO If stdin is ready, setup packets to send
+
+                    //TODO Check if machine has token
+                    //TODO If machine has token and wants to send a message, read from stdin
+                    //Read stdin, designate destination machine and add to packet
+                    printf("Please enter destination: ");
+                    fgets(packet.destination, sizeof(packet.destination), stdin);
+                    
+                    //Add source address to packet
+                    packet.source = node_num;
+                    //Read stdin, add input text (up to 80 chars) and add to packet
+                    i = 0;
+                    //TODO if getchar() doesn't work, it might be reading '\n' from the previous fgets, add in a getchar before loop if it doesnt work
+                    while(i < 80)
+                    {
+                        packet.text[i] = getchar();
+                        //If character pressed was return, stop taking in characters
+                        if(packet.text[i] = '\n')
+                        {
+                            packet.text[i] = ' ');
+                            break;
+                        }
+                        i++;
+                    }
+                    //After reading is complete, replace all remaining empty text bits as spaces
+                    for(; i < 80; i++)
+                    {
+                        packet.text[i] = ' ';
+                    }
+                
+ 
+                    //Send packet, reset packet in storage
+                    sendPacket();
+                    emptyPacket();
+                    packet.token[0] = ' ';
+                    packet.token[1] = ' ';
+			    n--;
+	  	    }
              
-			//If packet is for this machine, display it
-			if(packet.destination == node_num)
+			//else, If packet is for this machine, display it
+			else if(packet.destination == node_num)
 			{
                 //Diplay message to terminal, preceded by sender's node address
                 printf("Sender: %c\n", packet.source);
                 printf("Message: %s\n", packet.text);
                 //Remove message up to, but not including, DLE-ETX
                 emptyPacket();
-                //TODO Change packet's DLE-ETX
+                //TODO Change packet's DLE-ETX maybe?
             }    
-            //If packet is not for this machine, send it to next machine, and completely empty packet from storage
+            //If packet is from this machine, meaning it has made a full loop around token and not been received,
+            // delete the message to prevent it from infinitely looping around the network
+            else if(packet.source == node_num)
+            {
+                emptyPacket();
+            }
+            
+            //If machine has token and doesn't want to send a message, pass the token along
+            //OR if packet is not for this machine, send it to next machine, and completely empty packet from storage
             else
             {
                 sendPacket();
@@ -198,9 +205,7 @@ int main(int argc, char **argv)
                 packet.token[1] = ' ';
             }
 	    }
-        
-                
-
+   
 }
 
 int Server(char *my_ip_addr, char *other_ip_addr, int my_port)
