@@ -6,32 +6,36 @@
 
 int Server(char *my_ip_addr, char *other_ip_addr, int my_port);
 int Client(int port_no, char *other_ip_addr);
+void sendPacket();
+
+//Setup Packet Struct
+struct Packet
+{
+    char syn_syn[2];
+    char dle_stx[2];
+    char destination;
+    char source;
+    char text[81];
+    char dle_etx[2];
+};
+    
+struct Packet packet;
+char buffer[88];
 
 int main(int argc, char **argv)
 {
-    
+    //Set packet message last bit to null for printing purposes >>>>DO NOT CHANGE<<<<
+    packet.text[80] = '\0';
 
-    //Setup Packet Struct
-    struct Packet
-    {
-        char syn_syn[2];
-        char dle_stx[2];
-        char destination;
-        char source;
-        char text[80];
-        char dle_etx[2];
-    };
-    
-    struct Packet packet;
     
     char node_num;//This node number
     char *clientaddress = "";
-    char buffer[88];
     int clientport;
     int serverport;
-    char *clientport = "";
-    char *serverport = "";
     char yesno;
+    
+    //TOKEN is the correct token for the network to check against
+    char TOKEN[2] = {'1','q'};
     
     
   //Setup Node Number
@@ -111,29 +115,41 @@ int main(int argc, char **argv)
 
 		//TODO If stdin is ready, setup packets to send
 
-                //TODO Check if machine has token, and token is empty
+                //TODO Check if machine has token
+                //TODO If machine has token and wants to send a message, read from stdin
+                //TODO If machine has token and doesn't want to send a message, pass the token along
                 //Read stdin, designate destination machine and add to packet
                 printf("Please enter destination: ");
                 fgets(packet.destination, sizeof(packet.destination), stdin);
                 
                 //Add source address to packet
                 packet.source = node_num;
-                //TODO Read stdin, add input text (up to 80 chars) and add to packet
-                
-                //Serialize packet for sending
-                buffer[0] = packet.syn_syn[0];
-                buffer[1] = packet.syn_syn[1];
-                buffer[2] = packet.dle_stx[0];
-                buffer[3] = packet.dle_stx[1];
-                buffer[4] = packet.destination;
-                buffer[5] = packet.source;
-                for(i = 0; i < 80; i++)
+                //Read stdin, add input text (up to 80 chars) and add to packet
+                i = 0;
+                //TODO dont use getchar
+                while(i < 80)
                 {
-                    buffer[i + 6] = packet.text[i];
+                    packet.text[i] = getchar();
+                    //If character pressed was return, stop taking in characters
+                    if(packet.text[i] = '\n')
+                    {
+                        packet.text[i] = ' ');
+                        break;
+                    }
+                    i++;
                 }
-                buffer[86] = packet.token[0];
-                buffer[87] = packet.token[1];
-                //TODO Send packet
+                //After reading is complete, replace all remaining empty text bits as spaces
+                for(; i < 80; i++)
+                {
+                    packet.text[i] = ' ';
+                }
+                
+ 
+                //Send packet, reset packet in storage
+                sendPacket();
+                emptyPacket();
+                packet.token[0] = ' ';
+                packet.token[1] = ' ';
 			n--;
 	  	}
 	  	
@@ -148,7 +164,7 @@ int main(int argc, char **argv)
                 printf("ERROR on recv\n");
             }
             
-            //TODO Store received message into packet struct
+            //Store received message into packet struct
             //Unserialize packet
             packet.syn_syn[0] = buffer[0];
             packet.syn_syn[1] = buffer[1];
@@ -163,12 +179,24 @@ int main(int argc, char **argv)
             packet.token[0] = buffer[86];
             packet.token[1] = buffer[87];
              
-			//TODO If packet is for this machine, display it
-                //TODO Diplay message to terminal, preceded by sender's node address
-                //TODO Remove message up to, but not including, DLE-ETX
+			//If packet is for this machine, display it
+			if(packet.destination == node_num)
+			{
+                //Diplay message to terminal, preceded by sender's node address
+                printf("Sender: %c\n", packet.source);
+                printf("Message: %s\n", packet.text);
+                //Remove message up to, but not including, DLE-ETX
+                emptyPacket();
                 //TODO Change packet's DLE-ETX
-                
-            //TODO If packet is not for this machine, send it to next machine
+            }    
+            //If packet is not for this machine, send it to next machine, and completely empty packet from storage
+            else
+            {
+                sendPacket();
+                emptyPacket();
+                packet.token[0] = ' ';
+                packet.token[1] = ' ';
+            }
 	    }
         
                 
@@ -223,6 +251,41 @@ int Client(int port_no, char *other_ip_addr)
 		return(n);
 	else
 		return(s);
+}
+
+void emptyPacket()
+{
+    packet.syn_syn[0] = buffer[0];
+    packet.syn_syn[1] = buffer[1];
+    packet.dle_stx[0] = buffer[2];
+    packet.dle_stx[1] = buffer[3];
+    packet.destination = buffer[4];
+    packet.source = buffer[5];
+    for(i = 0; i < 80; i++)
+    {
+        packet.text[0] = buffer[i + 6];
+    }
+    packet.token[0] = buffer[86];
+    packet.token[1] = buffer[87];
+}
+
+void sendPacket()
+{
+    //Serialize packet for sending
+    buffer[0] = packet.syn_syn[0];
+    buffer[1] = packet.syn_syn[1];
+    buffer[2] = packet.dle_stx[0];
+    buffer[3] = packet.dle_stx[1];
+    buffer[4] = packet.destination;
+    buffer[5] = packet.source;
+    for(i = 0; i < 80; i++)
+    {
+        buffer[i + 6] = packet.text[i];
+    }
+    buffer[86] = packet.token[0];
+    buffer[87] = packet.token[1];
+    //TODO Send the packet
+    send(/*TODO client file descriptor*/, buffer, 88, 0);
 }
 
 
