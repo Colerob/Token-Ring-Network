@@ -7,6 +7,7 @@
 int Server(char *my_ip_addr, char *other_ip_addr, int my_port);
 int Client(int port_no, char *other_ip_addr);
 void sendPacket();
+void emptyPacket();
 
 //Setup Packet Struct
 struct Packet
@@ -97,7 +98,7 @@ int main(int argc, char **argv)
         //TODO Server connection
        
 	server =  Server(serveraddress, clientaddress, 50002);
-	printf("%d\n",s);
+	printf("%d\n",server);
 	 printf("Connection accepted from node A\n");       
 
     }
@@ -121,7 +122,8 @@ int main(int argc, char **argv)
 
     
     int n, i;
-    fd_set rset;		/* declare an fd_set for read descriptors */
+    fd_set rset;
+    int rec;		/* declare an fd_set for read descriptors */
     int sd;		/* declare an fd_set for read descriptors */
     
     for (;;) {	/* endless loop, if you want continuous operation */
@@ -173,7 +175,7 @@ int main(int argc, char **argv)
 
                     //Read stdin, designate destination machine and add to packet
                     printf("Please enter destination: ");
-                    fgets(packet.destination, sizeof(packet.destination), stdin);
+                    packet.destination = fgetc(stdin);
                     
                     //Add source address to packet
                     packet.source = node_num;
@@ -186,7 +188,7 @@ int main(int argc, char **argv)
                         //If character pressed was return, stop taking in characters
                         if(packet.text[i] = '\n')
                         {
-                            packet.text[i] = ' ');
+                            packet.text[i] = ' ';
                             break;
                         }
                         i++;
@@ -242,7 +244,7 @@ int Server(char *my_ip_addr, char *other_ip_addr, int my_port)
 {
 	
 
-	int s, fd, otherlength;
+	int s, fd, otherlength = sizeof(otherlength);
 	FILE *fdopen(), *fp;
 	char ch;
 	struct sockaddr_in myaddr;
@@ -261,7 +263,7 @@ int Server(char *my_ip_addr, char *other_ip_addr, int my_port)
 
 	listen(s, 1);
 	
-	fd = accept(s, (struct sockaddr *) &otheraddr, sizeof(otherlength));
+	fd = accept(s, (struct sockaddr *) &otheraddr, &otherlength);
 	//n = read(fd, buff, sizeof(buff) );
 	//printf("received message:%s\n",buff);
 
@@ -309,6 +311,7 @@ int Client(int port_no, char *other_ip_addr)
 
 void emptyPacket()
 {
+    int i;
     packet.syn_syn[0] = buffer[0];
     packet.syn_syn[1] = buffer[1];
     packet.dle_stx[0] = buffer[2];
@@ -325,6 +328,7 @@ void emptyPacket()
 
 void sendPacket()
 {
+    int i;
     //Serialize packet for sending
     buffer[0] = packet.syn_syn[0];
     buffer[1] = packet.syn_syn[1];
