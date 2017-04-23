@@ -8,6 +8,7 @@ int Server(char *my_ip_addr, char *other_ip_addr, int my_port);
 int Client(int port_no, char *other_ip_addr);
 void sendPacket();
 void emptyPacket();
+void initPacket();
 
 //Setup Packet Struct
 struct Packet
@@ -21,7 +22,7 @@ struct Packet
 };
     
 struct Packet packet;
-char buffer[88];
+char buffer[88], overflowbuffer[10000];
 int client, server;
 
 int main(int argc, char **argv)
@@ -41,6 +42,7 @@ int main(int argc, char **argv)
     
     //TOKEN is the correct token for the network to check against
     char TOKEN[2] = {'1','q'};
+
     
     
   //Setup Node Number
@@ -51,7 +53,7 @@ int main(int argc, char **argv)
 
  
     
-      //TODO Initialize Client and Server (Check stdin for node numbers)
+      //Initialize Client and Server (Check stdin for node numbers)
 /*
       
     printf("Please enter the IP address of this machine: ");
@@ -70,50 +72,44 @@ int main(int argc, char **argv)
     if(node_num == 'A')
     {
 
-   	//Server
+   		//Server
         printf("Listening for connection from node C ...\n");
-        //TODO Server connection
       	server =  Server(serveraddress, clientaddress, 50001);
         printf("Connection accepted from node C!\n");
-
-	client = Client(50002, clientaddress);
-	printf("Connected to B!\n");
-
+		
+		//Client
+		client = Client(50002, clientaddress);
+		printf("Connected to B!\n");
+   	    initPacket();
+   	    sendPacket();
     
     }
     
     if(node_num == 'B')
     {
     
-	//Client
+		//Client
         printf("Connecting to node C %s ...\n", clientaddress);
-        //TODO Client connection
-	client = Client(50003, clientaddress); 
+		client = Client(50003, clientaddress); 
         printf("Connected to node C)\n");
 
-	
-	//Server
-	
+		//Server
         printf("Listening for connection from node A...\n");
-        //TODO Server connection
-       
-	server =  Server(serveraddress, clientaddress, 50002);
-	printf("%d\n",server);
-	 printf("Connection accepted from node A\n");       
-
+		server =  Server(serveraddress, clientaddress, 50002);
+		printf("%d\n",server);
+	    printf("Connection accepted from node A\n");       
     }
+    
     if(node_num == 'C'){
-	//Client
+		//Client
         printf("Connecting to node A ...\n");
-        //TODO Client connection
-	client = Client(50001, clientaddress); 
+		client = Client(50001, clientaddress); 
         printf("Connected to node A\n");
 
-	//Server
-        printf("Listening for connection from node B...\n");
-        //TODO Server connection
-	server =  Server(serveraddress, clientaddress, 50003);
-	printf("Connection accepted from node B\n");
+		//Server
+    	printf("Listening for connection from node B...\n");
+		server =  Server(serveraddress, clientaddress, 50003);
+		printf("Connection accepted from node B\n");
 
     }
     
@@ -124,13 +120,18 @@ int main(int argc, char **argv)
     int n, i;
     fd_set rset;
     int rec;		/* declare an fd_set for read descriptors */
-    int sd;		/* declare an fd_set for read descriptors */
+    //int sd;		/* declare an fd_set for read descriptors */
+    char mesbuf[80];
+    char dummy;
+    
+    dummy = getchar();
     
     for (;;) {	/* endless loop, if you want continuous operation */
         FD_ZERO(&rset);		/* clear all bits in rset */
 		FD_SET(STDIN_FILENO, &rset);	/* set the standard input bit */
-		FD_SET(sd, &rset);	/* set the socket descriptor bit */
- 		n = select((sd>STDIN_FILENO? sd:STDIN_FILENO)+1, &rset, NULL, NULL, NULL);
+		FD_SET(server, &rset);	/* set the socket descriptor bit */
+ 		n = select((server>STDIN_FILENO? server:STDIN_FILENO)+1, &rset, NULL, NULL, NULL);
+ 		
 		/* select blocks, and n is the number of ready descriptors */
 		if ( (n == -1 ) && (errno == EINTR) ) /* interruption */
 		    continue;
@@ -143,12 +144,12 @@ int main(int argc, char **argv)
         /* after this point, handle the ready descriptor(s) */
         
         
-        //TODO If server is ready, read packets
-	  	if ((n > 0 ) && (FD_ISSET(sd, &rset)) ) {
+        //If server is ready, read packets
+	  	if ((n > 0 ) && (FD_ISSET(server, &rset)) ) {
 	  	    /* socket is ready for reading */
 	  	    
 			/* read data from socket */
-			if(rec = recv(sd, buffer, 88, 0) == -1) { 
+			if(rec = recv(server, buffer, 88, 0) == -1) { 
                 printf("ERROR on recv\n");
             }
             
@@ -162,49 +163,51 @@ int main(int argc, char **argv)
             packet.source = buffer[5];
             for(i = 0; i < 80; i++)
             {
-                packet.text[0] = buffer[i + 6];
+                packet.text[i] = buffer[i + 6];
             }
             packet.dle_etx[0] = buffer[86];
             packet.dle_etx[1] = buffer[87];
             
-            //TODO If packet is just token (ie, all fields except DEL-ETX are ' ') and there is input from keyboard
+            //If packet is just token (ie, all fields except DEL-ETX are ' ') and there is 				input from keyboard
             /* check for ready data from the keyboard */
 
-	  	    if (FD_ISSET(STDIN_FILENO, &rset)) {
+	  	    if (FD_ISSET(STDIN_FILENO, &rset) && (packet.syn_syn[0] == ' ' && packet.syn_syn[1] == ' ' 			&& packet.dle_etx[0] == '1' && packet.dle_etx[1] == 'q')) {
 	  	    /* read data from the standard input*/
 
                     //Read stdin, designate destination machine and add to packet
+                    dummy = getchar(); //Remove newline character
                     printf("Please enter destination: ");
-                    packet.destination = fgetc(stdin);
+                    packet.destination = getchar();
+                    printf("Destination is %c\n", packet.destination);
                     
+                    //Remove newline character
+                    dummy = getchar();
                     //Add source address to packet
                     packet.source = node_num;
                     //Read stdin, add input text (up to 80 chars) and add to packet
                     i = 0;
-                    //TODO if getchar() doesn't work, it might be reading '\n' from the previous fgets, add in a getchar before loop if it doesnt work
-                    while(i < 80)
-                    {
-                        packet.text[i] = getchar();
-                        //If character pressed was return, stop taking in characters
-                        if(packet.text[i] = '\n')
-                        {
-                            packet.text[i] = ' ';
-                            break;
-                        }
-                        i++;
-                    }
-                    //After reading is complete, replace all remaining empty text bits as spaces
-                    for(; i < 80; i++)
-                    {
-                        packet.text[i] = ' ';
-                    }
+                    //If getchar() doesn't work, it might be reading '\n' from the previous 						fgets, add in a getchar before loop if it doesnt work
+                    printf("Please enter message: \n");
+                    fgets(packet.text, 80, stdin);
+                    fgets(overflowbuffer, 10000, stdin); //If number of characters is >80, they go 																into overflow
+
+                    printf("Message is: %s\n", packet.text);
                 
- 
+					//Setup SYN-SYN
+					packet.syn_syn[0] = '0';
+					packet.syn_syn[1] = '1';
+					//Setup DLE-STX
+					packet.dle_stx[0] = '1';
+					packet.dle_stx[1] = 'q';
+					//Setup DLE-ETX
+					packet.dle_etx[0] = '1';
+					packet.dle_etx[1] = 'q';
                     //Send packet, reset packet in storage
                     sendPacket();
+                    printf("Buffer sent is %s%c%c\n", buffer, buffer[86], buffer[87]);
                     emptyPacket();
-                    packet.dle_etx[0] = ' ';
-                    packet.dle_etx[1] = ' ';
+                    //packet.dle_etx[0] = ' ';
+                    //packet.dle_etx[1] = ' ';
 			    n--;
 	  	    }
              
@@ -214,15 +217,18 @@ int main(int argc, char **argv)
                 //Diplay message to terminal, preceded by sender's node address
                 printf("Sender: %c\n", packet.source);
                 printf("Message: %s\n", packet.text);
+                printf("Buffer got is %s%c%c\n", buffer, buffer[86],buffer[87]);
                 //Remove message up to, but not including, DLE-ETX
                 emptyPacket();
                 //TODO Change packet's DLE-ETX (maybe)?
+                sendPacket();
             }    
             //If packet is from this machine, meaning it has made a full loop around token and not been received,
             // delete the message to prevent it from infinitely looping around the network
             else if(packet.source == node_num)
             {
                 emptyPacket();
+                sendPacket();
             }
             
             //If machine has token and doesn't want to send a message, pass the token along
@@ -231,8 +237,8 @@ int main(int argc, char **argv)
             {
                 sendPacket();
                 emptyPacket();
-                packet.dle_etx[0] = ' ';
-                packet.dle_etx[1] = ' ';
+                //packet.dle_etx[0] = ' ';
+                //packet.dle_etx[1] = ' ';
             }
 	    }
 
@@ -264,10 +270,7 @@ int Server(char *my_ip_addr, char *other_ip_addr, int my_port)
 	listen(s, 1);
 	
 	fd = accept(s, (struct sockaddr *) &otheraddr, &otherlength);
-	//n = read(fd, buff, sizeof(buff) );
-	//printf("received message:%s\n",buff);
 
-	//fprintf(stdout, "Connected");
 
 	return(fd);
 }
@@ -297,10 +300,6 @@ int Client(int port_no, char *other_ip_addr)
 
 		
 	}
-
-	//write(s,sMessage,sizeof(sMessage));
-       //printf("Request to server: %s\n",sMessage);
-       //printf("\n");
 	
 
 	if ( n < 0)
@@ -309,23 +308,25 @@ int Client(int port_no, char *other_ip_addr)
 		return(s);
 }
 
+/*Empties the packet by making all contents into a space ' '*/
 void emptyPacket()
 {
     int i;
-    packet.syn_syn[0] = buffer[0];
-    packet.syn_syn[1] = buffer[1];
-    packet.dle_stx[0] = buffer[2];
-    packet.dle_stx[1] = buffer[3];
-    packet.destination = buffer[4];
-    packet.source = buffer[5];
+    packet.syn_syn[0] = ' ';
+    packet.syn_syn[1] = ' ';
+    packet.dle_stx[0] = ' ';
+    packet.dle_stx[1] = ' ';
+    packet.destination = ' ';
+    packet.source = ' ';
     for(i = 0; i < 80; i++)
     {
-        packet.text[0] = buffer[i + 6];
+        packet.text[0] = ' ';
     }
-    packet.dle_etx[0] = buffer[86];
-    packet.dle_etx[1] = buffer[87];
+    //packet.dle_etx[0] = ' ';
+    //packet.dle_etx[1] = ' ';
 }
 
+/*Sends the packet on the client socket*/
 void sendPacket()
 {
     int i;
@@ -336,14 +337,42 @@ void sendPacket()
     buffer[3] = packet.dle_stx[1];
     buffer[4] = packet.destination;
     buffer[5] = packet.source;
-    for(i = 0; i < 80; i++)
+    for(i = 0; (packet.text[i] != '\0') || i < 80; i++)
     {
+    	if(packet.text[i] == '\n')
+    	{
+    		packet.text[i] = '\0';
+    	}
         buffer[i + 6] = packet.text[i];
     }
+    
+    for(; i < 80; i++)
+    {
+    	buffer[i+6] = ' ';
+    }
+    
     buffer[86] = packet.dle_etx[0];
     buffer[87] = packet.dle_etx[1];
-    //TODO Send the packet
-    send(client, buffer, 88, 0);
+    //Send the packet
+    send(client, buffer, sizeof(buffer), 0);
+}
+
+void initPacket()
+{
+    int i;
+    packet.syn_syn[0] = ' ';
+    packet.syn_syn[1] = ' ';
+    packet.dle_stx[0] = ' ';
+    packet.dle_stx[1] = ' ';
+    packet.destination = ' ';
+    packet.source = ' ';
+    for(i = 0; i < 80; i++)
+    {
+        packet.text[0] = ' ';
+    }
+    packet.dle_etx[0] = '1';
+    packet.dle_etx[1] = 'q';
+
 }
 
 
