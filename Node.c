@@ -21,6 +21,7 @@ struct Packet
     
 struct Packet packet;
 char buffer[88];
+int client, server;
 
 int main(int argc, char **argv)
 {
@@ -71,10 +72,10 @@ int main(int argc, char **argv)
    	//Server
         printf("Listening for connection from node C ...\n");
         //TODO Server connection
-      	int s =  Server(serveraddress, clientaddress, 50001);
+      	server =  Server(serveraddress, clientaddress, 50001);
         printf("Connection accepted from node C!\n");
 
-	int c = Client(50002, clientaddress);
+	client = Client(50002, clientaddress);
 	printf("Connected to B!\n");
 
     
@@ -86,7 +87,7 @@ int main(int argc, char **argv)
 	//Client
         printf("Connecting to node C %s ...\n", clientaddress);
         //TODO Client connection
-	int c = Client(50003, clientaddress); 
+	client = Client(50003, clientaddress); 
         printf("Connected to node C)\n");
 
 	
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
         printf("Listening for connection from node A...\n");
         //TODO Server connection
        
-	int s =  Server(serveraddress, clientaddress, 50002);
+	server =  Server(serveraddress, clientaddress, 50002);
 	printf("%d\n",s);
 	 printf("Connection accepted from node A\n");       
 
@@ -104,13 +105,13 @@ int main(int argc, char **argv)
 	//Client
         printf("Connecting to node A ...\n");
         //TODO Client connection
-	int c = Client(50001, clientaddress); 
+	client = Client(50001, clientaddress); 
         printf("Connected to node A\n");
 
 	//Server
         printf("Listening for connection from node B...\n");
         //TODO Server connection
-	int s =  Server(serveraddress, clientaddress, 50003);
+	server =  Server(serveraddress, clientaddress, 50003);
 	printf("Connection accepted from node B\n");
 
     }
@@ -161,8 +162,8 @@ int main(int argc, char **argv)
             {
                 packet.text[0] = buffer[i + 6];
             }
-            packet.token[0] = buffer[86];
-            packet.token[1] = buffer[87];
+            packet.dle_etx[0] = buffer[86];
+            packet.dle_etx[1] = buffer[87];
             
             //TODO If packet is just token (ie, all fields except DEL-ETX are ' ') and there is input from keyboard
             /* check for ready data from the keyboard */
@@ -200,8 +201,8 @@ int main(int argc, char **argv)
                     //Send packet, reset packet in storage
                     sendPacket();
                     emptyPacket();
-                    packet.token[0] = ' ';
-                    packet.token[1] = ' ';
+                    packet.dle_etx[0] = ' ';
+                    packet.dle_etx[1] = ' ';
 			    n--;
 	  	    }
              
@@ -228,8 +229,8 @@ int main(int argc, char **argv)
             {
                 sendPacket();
                 emptyPacket();
-                packet.token[0] = ' ';
-                packet.token[1] = ' ';
+                packet.dle_etx[0] = ' ';
+                packet.dle_etx[1] = ' ';
             }
 	    }
 
@@ -256,13 +257,13 @@ int Server(char *my_ip_addr, char *other_ip_addr, int my_port)
 	myaddr.sin_family  = AF_INET;
 	myaddr.sin_port = htons(my_port);
 	
-	bind(s, &myaddr, sizeof(myaddr));
+	bind(s,(struct sockaddr *) &myaddr, sizeof(myaddr));
 
 	listen(s, 1);
 	
-	fd = accept(s, &otheraddr, sizeof(otherlength));
-	n = read(fd, buff, sizeof(buff) );
-	printf("received message:%s\n",buff);
+	fd = accept(s, (struct sockaddr *) &otheraddr, sizeof(otherlength));
+	//n = read(fd, buff, sizeof(buff) );
+	//printf("received message:%s\n",buff);
 
 	//fprintf(stdout, "Connected");
 
@@ -286,8 +287,8 @@ int Client(int port_no, char *other_ip_addr)
 	s = socket(AF_INET, SOCK_STREAM, 0);
 
 	for(;;){
-		n=connect(s, &otheraddr, sizeof(otheraddr));
-		printf("%d\n",n);
+		n=connect(s,(struct sockaddr *) &otheraddr, sizeof(otheraddr));
+		//printf("%d\n",n);
 		if(n!=-1){
 			break;	
 		}
@@ -295,8 +296,8 @@ int Client(int port_no, char *other_ip_addr)
 		
 	}
 
-	write(s,sMessage,sizeof(sMessage));
-       printf("Request to server: %s\n",sMessage);
+	//write(s,sMessage,sizeof(sMessage));
+       //printf("Request to server: %s\n",sMessage);
        //printf("\n");
 	
 
@@ -318,8 +319,8 @@ void emptyPacket()
     {
         packet.text[0] = buffer[i + 6];
     }
-    packet.token[0] = buffer[86];
-    packet.token[1] = buffer[87];
+    packet.dle_etx[0] = buffer[86];
+    packet.dle_etx[1] = buffer[87];
 }
 
 void sendPacket()
@@ -335,10 +336,10 @@ void sendPacket()
     {
         buffer[i + 6] = packet.text[i];
     }
-    buffer[86] = packet.token[0];
-    buffer[87] = packet.token[1];
+    buffer[86] = packet.dle_etx[0];
+    buffer[87] = packet.dle_etx[1];
     //TODO Send the packet
-    send(/*TODO client file descriptor*/, buffer, 88, 0);
+    send(client, buffer, 88, 0);
 }
 
 
