@@ -139,10 +139,6 @@ int main(int argc, char **argv)
 	  	    if (FD_ISSET(STDIN_FILENO, &rset)) {
 	  	    /* read data from the standard input*/
 
-		    //TODO If stdin is ready, setup packets to send
-
-                    //TODO Check if machine has token
-                    //TODO If machine has token and wants to send a message, read from stdin
                     //Read stdin, designate destination machine and add to packet
                     printf("Please enter destination: ");
                     fgets(packet.destination, sizeof(packet.destination), stdin);
@@ -186,7 +182,7 @@ int main(int argc, char **argv)
                 printf("Message: %s\n", packet.text);
                 //Remove message up to, but not including, DLE-ETX
                 emptyPacket();
-                //TODO Change packet's DLE-ETX maybe?
+                //TODO Change packet's DLE-ETX (maybe)?
             }    
             //If packet is from this machine, meaning it has made a full loop around token and not been received,
             // delete the message to prevent it from infinitely looping around the network
