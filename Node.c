@@ -134,6 +134,7 @@ int main(int argc, char **argv)
  		
 		/* select blocks, and n is the number of ready descriptors */
 		if ( (n == -1 ) && (errno == EINTR) ) /* interruption */
+			//printf("YOU PRESSED IT\n");
 		    continue;
 	  	if (n== -1) {	/* error: you may handle it, if you want */
 		 	/* code to handle errors */
