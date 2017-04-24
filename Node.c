@@ -54,7 +54,7 @@ int main(int argc, char **argv)
  
     
       //Initialize Client and Server (Check stdin for node numbers)
-/*
+
       
     printf("Please enter the IP address of this machine: ");
     scanf("%s",serveraddress);
@@ -67,9 +67,49 @@ int main(int argc, char **argv)
     
 
     printf("Please enter port number to connect to: ");
-    scanf("%10d" ,&clientport); */
+    scanf("%10d" ,&clientport);
+    
+    printf("Is this the first machine setup? (y/n) ");
+    while(1)
+    {
+        yesno = getchar();
+        if(yesno != '\n') break;
+    }
+    //fgets(yesno, sizeof(yesno), stdin);
+    
+    
+    if(yesno == 'y')
+    {
+   		//Server
+        printf("Listening for connection on this server ...\n");
+      	server =  Server(serveraddress, clientaddress, serverport);
+        printf("Connection accepted on server!\n");
+		
+		//Client
+		printf("Connecting to next server...\n");
+		client = Client(clientport, clientaddress);
+		printf("Connected to next server!\n");
+   	    initPacket();
+   	    sendPacket();
+    
+    }
+    
+    
+    else
+    {
+    	//Client
+        printf("Connecting to next server...\n");
+		client = Client(clientport, clientaddress); 
+        printf("Connected to next server\n");
 
-    if(node_num == 'A')
+		//Server
+    	printf("Listening for connection on this server...\n");
+		server =  Server(serveraddress, clientaddress, serverport);
+		printf("Connection accepted on server\n");
+    
+    }
+
+    /*if(node_num == 'A')
     {
 
    		//Server
@@ -111,7 +151,7 @@ int main(int argc, char **argv)
 		server =  Server(serveraddress, clientaddress, 50003);
 		printf("Connection accepted from node B\n");
 
-    }
+    }*/
     
    
     //Select.c
@@ -221,6 +261,8 @@ int main(int argc, char **argv)
                 printf("Buffer got is %s%c%c\n", buffer, buffer[86],buffer[87]);
                 //Remove message up to, but not including, DLE-ETX
                 emptyPacket();
+                packet.dle_etx[0] = '1';
+                packet.dle_etx[1] = 'q';
                 //TODO Change packet's DLE-ETX (maybe)?
                 sendPacket();
             }    
@@ -229,6 +271,8 @@ int main(int argc, char **argv)
             else if(packet.source == node_num)
             {
                 emptyPacket();
+                packet.dle_etx[0] = '1';
+                packet.dle_etx[1] = 'q';
                 sendPacket();
             }
             
@@ -323,8 +367,8 @@ void emptyPacket()
     {
         packet.text[0] = ' ';
     }
-    //packet.dle_etx[0] = ' ';
-    //packet.dle_etx[1] = ' ';
+    packet.dle_etx[0] = ' ';
+    packet.dle_etx[1] = ' ';
 }
 
 /*Sends the packet on the client socket*/
