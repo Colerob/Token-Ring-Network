@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 
     
     
-  //Setup Node Number
+    //Setup Node Number
     printf("Please enter this machine's node number: ");
     node_num=getchar();
     printf("Node number set as %c\n", node_num);
@@ -53,9 +53,7 @@ int main(int argc, char **argv)
 
  
     
-      //Initialize Client and Server (Check stdin for node numbers)
-
-      
+    //Initialize Client and Server by getting IP addresses and ports
     printf("Please enter the IP address of this machine: ");
     scanf("%s",serveraddress);
     
@@ -75,7 +73,6 @@ int main(int argc, char **argv)
         yesno = getchar();
         if(yesno != '\n') break;
     }
-    //fgets(yesno, sizeof(yesno), stdin);
     
     
     if(yesno == 'y')
@@ -109,6 +106,7 @@ int main(int argc, char **argv)
     
     }
 
+    //Static test node setup
     /*if(node_num == 'A')
     {
 
@@ -230,6 +228,8 @@ int main(int argc, char **argv)
                     //If getchar() doesn't work, it might be reading '\n' from the previous 						fgets, add in a getchar before loop if it doesnt work
                     printf("Please enter message: \n");
                     fgets(packet.text, 80, stdin);
+                    printf("Press return to confirm message");
+
                     fgets(overflowbuffer, 10000, stdin); //If number of characters is >80, they go 																into overflow
 
                     printf("Message is: %s\n", packet.text);
