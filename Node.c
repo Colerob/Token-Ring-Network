@@ -9,6 +9,7 @@ int Client(int port_no, char *other_ip_addr);
 void sendPacket();
 void emptyPacket();
 void initPacket();
+void handlePacket();
 
 //Setup Packet Struct
 struct Packet
@@ -24,6 +25,9 @@ struct Packet
 struct Packet packet;
 char buffer[88], overflowbuffer[10000];
 int client, server;
+char stdin_buff[1];
+int READ_FLAG = 0, TOKEN_FLAG = 0;
+char node_num;//This node number
 
 int main(int argc, char **argv)
 {
@@ -33,7 +37,7 @@ int main(int argc, char **argv)
    
 
     
-    char node_num;//This node number
+
     char clientaddress[20] = "127.0.0.1";
     char serveraddress[20]="127.0.0.1";
     int clientport;
@@ -106,7 +110,7 @@ int main(int argc, char **argv)
     
     }
 
-    //Static test node setup
+    //Static test node setup for testing
     /*if(node_num == 'A')
     {
 
@@ -162,7 +166,7 @@ int main(int argc, char **argv)
     char mesbuf[80];
     char dummy;
     
-    dummy = getchar();
+    dummy = getchar();//Clear newline
     
     for (;;) {	/* endless loop, if you want continuous operation */
         FD_ZERO(&rset);		/* clear all bits in rset */
@@ -178,8 +182,7 @@ int main(int argc, char **argv)
 		 	/* code to handle errors */
 			printf("Error");
 	  	}
-        //TODO Generate token if CNTRL-P (Hex 10) is typed on machine
-        
+
         /* after this point, handle the ready descriptor(s) */
         
         
@@ -206,11 +209,26 @@ int main(int argc, char **argv)
             }
             packet.dle_etx[0] = buffer[86];
             packet.dle_etx[1] = buffer[87];
+            READ_FLAG = 1;
+        }
             
             //If packet is just token (ie, all fields except DEL-ETX are ' ') and there is 				input from keyboard
             /* check for ready data from the keyboard */
+            if (FD_ISSET(STDIN_FILENO, &rset) && (packet.syn_syn[0] == ' ' && packet.syn_syn[1] == ' ' 			&& packet.dle_etx[0] == ' ' && packet.dle_etx[1] == ' '))
+            {
+                read(STDIN_FILENO, stdin_buff, sizeof(stdin_buff));
+                if(stdin_buff[0]=='y')
+                {
+                    dummy = getchar();
+                    printf("Token Generated. Please press return");
+                    TOKEN_FLAG = 1;
+                }
+                n--;
+            
+            }
 
-	  	    if (FD_ISSET(STDIN_FILENO, &rset) && (packet.syn_syn[0] == ' ' && packet.syn_syn[1] == ' ' 			&& packet.dle_etx[0] == '1' && packet.dle_etx[1] == 'q')) {
+	  	    if (FD_ISSET(STDIN_FILENO, &rset) && (packet.syn_syn[0] == ' ' && packet.syn_syn[1] == ' ' 			&& packet.dle_etx[0] == '1' && packet.dle_etx[1] == 'q') || TOKEN_FLAG == 1)
+	  	     {
 	  	    /* read data from the standard input*/
 
                     //Read stdin, designate destination machine and add to packet
@@ -246,46 +264,20 @@ int main(int argc, char **argv)
                     //Send packet, reset packet in storage
                     sendPacket();
                     printf("Buffer sent is %s%c%c\n", buffer, buffer[86], buffer[87]);
-                    emptyPacket();
+                    //emptyPacket();
                     //packet.dle_etx[0] = ' ';
                     //packet.dle_etx[1] = ' ';
-			    n--;
+			        n--;
+			        TOKEN_FLAG = 0;
+	  	    }
+	  	    else{
+	  	 		handlePacket();   
 	  	    }
              
-			//else, If packet is for this machine, display it
-			else if(packet.destination == node_num)
-			{
-                //Diplay message to terminal, preceded by sender's node address
-                printf("Sender: %c\n", packet.source);
-                printf("Message: %s\n", packet.text);
-                printf("Buffer got is %s%c%c\n", buffer, buffer[86],buffer[87]);
-                //Remove message up to, but not including, DLE-ETX
-                emptyPacket();
-                packet.dle_etx[0] = '1';
-                packet.dle_etx[1] = 'q';
-                //TODO Change packet's DLE-ETX (maybe)?
-                sendPacket();
-            }    
-            //If packet is from this machine, meaning it has made a full loop around token and not been received,
-            // delete the message to prevent it from infinitely looping around the network
-            else if(packet.source == node_num)
-            {
-                emptyPacket();
-                packet.dle_etx[0] = '1';
-                packet.dle_etx[1] = 'q';
-                sendPacket();
-            }
-            
-            //If machine has token and doesn't want to send a message, pass the token along
-            //OR if packet is not for this machine, send it to next machine, and completely empty packet from storage
-            else
-            {
-                sendPacket();
-                emptyPacket();
-                //packet.dle_etx[0] = ' ';
-                //packet.dle_etx[1] = ' ';
-            }
-	    }
+
+
+	    
+	    
 
 } 
 
@@ -418,6 +410,43 @@ void initPacket()
     packet.dle_etx[0] = '1';
     packet.dle_etx[1] = 'q';
 
+}
+
+void handlePacket()
+{
+	if(packet.destination == node_num)
+	{
+            //Diplay message to terminal, preceded by sender's node address
+            printf("Sender: %c\n", packet.source);
+            printf("Message: %s\n", packet.text);
+            printf("Buffer got is %s%c%c\n", buffer, buffer[86],buffer[87]);
+            //Remove message up to, but not including, DLE-ETX
+            emptyPacket();
+            packet.dle_etx[0] = '1';
+            packet.dle_etx[1] = 'q';
+            
+            sendPacket();
+    }    
+    
+    //If packet is from this machine, meaning it has made a full loop around token and not been received,
+    // delete the message to prevent it from infinitely looping around the network
+    else if(packet.source == node_num)
+    {
+            emptyPacket();
+            packet.dle_etx[0] = '1';
+            packet.dle_etx[1] = 'q';
+            sendPacket();
+    }
+            
+    //If machine has token and doesn't want to send a message, pass the token along
+    //OR if packet is not for this machine, send it to next machine, and completely empty packet from storage
+    else
+    {
+            sendPacket();
+            emptyPacket();
+            //packet.dle_etx[0] = ' ';
+            //packet.dle_etx[1] = ' ';
+    }
 }
 
 
